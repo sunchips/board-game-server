@@ -20,18 +20,25 @@ class AuthController(
 ) {
 
     /**
-     * Exchanges an Apple ID token for a server session JWT. The caller is the
+     * Exchange an Apple ID token for a server session JWT. The caller is the
      * iOS app, which got the ID token from `ASAuthorizationAppleIDCredential`.
+     * Response flags whether this is a new account so the client can show a
+     * first-run experience.
      */
     @PostMapping("/apple")
     fun exchangeApple(@RequestBody body: AppleAuthRequest): AuthResponse {
         val identity = apple.verify(body.identityToken)
-        val user = users.upsertFromApple(identity, body.fullName)
-        val issued = jwt.issue(user.id)
+        val result = users.upsertFromApple(identity, body.fullName)
+        val issued = jwt.issue(result.user.id)
         return AuthResponse(
             token = issued.token,
             expiresAt = issued.expiresAt,
-            user = AuthUser(id = user.id, email = user.email, displayName = user.displayName),
+            user = AuthUser(
+                id = result.user.id,
+                email = result.user.email,
+                displayName = result.user.displayName,
+            ),
+            isNewUser = result.isNew,
         )
     }
 }

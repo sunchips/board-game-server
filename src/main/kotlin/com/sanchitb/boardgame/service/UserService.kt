@@ -12,11 +12,14 @@ import java.util.UUID
 class UserService(private val users: UserRepository) {
 
     /**
-     * Upserts by `apple_sub`. Apple only sends `email` / `displayName` on the
+     * Upsert by `apple_sub`. Apple only sends `email` / `displayName` on the
      * very first sign-in, so we merge non-null values into whatever we have.
+     *
+     * The returned [UpsertResult.isNew] lets the client tell a first-time signup
+     * apart from a returning login (useful for welcome UX, analytics).
      */
     @Transactional
-    fun upsertFromApple(identity: AppleIdentity, displayName: String?): UserEntity {
+    fun upsertFromApple(identity: AppleIdentity, displayName: String?): UpsertResult {
         val existing = users.findByAppleSub(identity.sub).orElse(null)
         if (existing != null) {
             if (identity.email != null && existing.email != identity.email) {
@@ -25,18 +28,21 @@ class UserService(private val users: UserRepository) {
             if (!displayName.isNullOrBlank() && existing.displayName != displayName) {
                 existing.displayName = displayName
             }
-            return users.save(existing)
+            return UpsertResult(users.save(existing), isNew = false)
         }
-        return users.save(
+        val created = users.save(
             UserEntity(
                 appleSub = identity.sub,
                 email = identity.email,
                 displayName = displayName?.takeIf { it.isNotBlank() },
             ),
         )
+        return UpsertResult(created, isNew = true)
     }
 
     @Transactional(readOnly = true)
     fun requireById(id: UUID): UserEntity =
         users.findById(id).orElseThrow { RecordNotFoundException("user: $id") }
+
+    data class UpsertResult(val user: UserEntity, val isNew: Boolean)
 }
