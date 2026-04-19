@@ -22,11 +22,12 @@ class RecordService(
 ) {
 
     @Transactional
-    fun create(body: String): RecordResponse {
+    fun create(userId: UUID, body: String): RecordResponse {
         val jsonNode = objectMapper.readTree(body)
         schemaValidator.validate(jsonNode)
         val req = objectMapper.treeToValue(jsonNode, CreateRecordRequest::class.java)
         val entity = GameRecordEntity(
+            userId = userId,
             game = req.game,
             yearPublished = req.yearPublished,
             variants = req.variants,
@@ -49,15 +50,21 @@ class RecordService(
     }
 
     @Transactional(readOnly = true)
-    fun list(game: String?, limit: Int): List<RecordResponse> {
+    fun list(userId: UUID, game: String?, limit: Int): List<RecordResponse> {
         val pageable = PageRequest.of(0, limit.coerceIn(1, 500))
-        val page = if (game.isNullOrBlank()) repo.findAllNewest(pageable) else repo.findByGame(game, pageable)
+        val page = if (game.isNullOrBlank()) {
+            repo.findAllForUser(userId, pageable)
+        } else {
+            repo.findByUserAndGame(userId, game, pageable)
+        }
         return page.content.map { it.toResponse() }
     }
 
     @Transactional(readOnly = true)
-    fun findById(id: UUID): RecordResponse =
-        repo.findById(id).orElseThrow { RecordNotFoundException(id.toString()) }.toResponse()
+    fun findById(userId: UUID, id: UUID): RecordResponse =
+        repo.findByIdAndUserId(id, userId)
+            .orElseThrow { RecordNotFoundException(id.toString()) }
+            .toResponse()
 
     private fun GameRecordEntity.toResponse(): RecordResponse = RecordResponse(
         id = this.id,

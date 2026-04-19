@@ -1,5 +1,7 @@
 package com.sanchitb.boardgame.error
 
+import com.sanchitb.boardgame.auth.InvalidAppleTokenException
+import com.sanchitb.boardgame.auth.InvalidSessionTokenException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -9,6 +11,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
+
+    @ExceptionHandler(InvalidAppleTokenException::class)
+    fun handleInvalidAppleToken(ex: InvalidAppleTokenException): ResponseEntity<ApiError> =
+        ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+            ApiError(status = 401, error = "Unauthorized", message = ex.message ?: "Apple token rejected"),
+        )
+
+    @ExceptionHandler(InvalidSessionTokenException::class)
+    fun handleInvalidSessionToken(ex: InvalidSessionTokenException): ResponseEntity<ApiError> =
+        ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+            ApiError(status = 401, error = "Unauthorized", message = ex.message ?: "Session token rejected"),
+        )
 
     @ExceptionHandler(SchemaValidationException::class)
     fun handleValidation(ex: SchemaValidationException): ResponseEntity<ApiError> =

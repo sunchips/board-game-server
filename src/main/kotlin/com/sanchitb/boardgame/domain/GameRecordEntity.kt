@@ -18,6 +18,9 @@ class GameRecordEntity(
     @Column(name = "id", nullable = false, updatable = false)
     var id: UUID = UUID.randomUUID(),
 
+    @Column(name = "user_id", nullable = false, updatable = false)
+    var userId: UUID = UUID.randomUUID(),
+
     @Column(name = "game", nullable = false)
     var game: String = "",
 

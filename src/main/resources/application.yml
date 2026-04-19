@@ -24,8 +24,15 @@ spring:
     property-naming-strategy: SNAKE_CASE
     default-property-inclusion: non_null
 
-api:
-  key: ${BOARD_GAME_API_KEY:dev-key}
+apple:
+  # iOS bundle id — must match the `aud` claim in Apple ID tokens.
+  bundle-id: ${APPLE_BUNDLE_ID:com.sanchitb.boardgame.app}
+
+auth:
+  jwt:
+    # Sign our session JWTs. Override in prod — never ship the default.
+    secret: ${BOARD_GAME_JWT_SECRET:dev-only-secret-change-me-at-least-32-bytes-please}
+    ttl-hours: ${BOARD_GAME_JWT_TTL_HOURS:720}
 
 logging:
   level:

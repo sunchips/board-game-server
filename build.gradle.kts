@@ -54,6 +54,9 @@ dependencies {
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("com.networknt:json-schema-validator:1.5.2")
+    // Apple Sign-In: verify Apple's RS256 ID tokens, issue our own HS256 session JWTs.
+    implementation("com.auth0:java-jwt:4.4.0")
+    implementation("com.auth0:jwks-rsa:0.22.1")
 
     runtimeOnly("org.postgresql:postgresql")
 
