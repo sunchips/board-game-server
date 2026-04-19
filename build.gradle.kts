@@ -11,15 +11,19 @@ plugins {
 group = "com.sanchitb"
 version = "0.1.0"
 
+// Build runs on Java 25 (toolchain). Bytecode targets JVM 24 because Kotlin
+// 2.2.0's jvmTarget tops out there; Java 25 runs JVM 24 bytecode without issue.
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(25))
     }
+    sourceCompatibility = JavaVersion.VERSION_24
+    targetCompatibility = JavaVersion.VERSION_24
 }
 
 kotlin {
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_25)
+        jvmTarget.set(JvmTarget.fromTarget("24"))
         freeCompilerArgs.addAll("-Xjsr305=strict")
     }
 }
@@ -32,9 +36,19 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+    // Spring Boot 4 serialises HTTP bodies with Jackson 3 (tools.jackson.*). Pull in
+    // its Kotlin module so our Kotlin data classes round-trip on the HTTP layer.
+    // java.time support is built into Jackson 3 core — no separate jsr310 datatype.
+    implementation("tools.jackson.module:jackson-module-kotlin:3.1.0")
+    // Jackson 2 is still required because networknt/json-schema-validator speaks
+    // com.fasterxml.jackson.databind.JsonNode — we parse request bodies and build
+    // merged schemas as Jackson 2 trees purely for validation.
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.2")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
+    // Spring Boot 4 split auto-config into per-subsystem modules; spring-boot-flyway
+    // provides FlywayAutoConfiguration (equivalent to what was in spring-boot-autoconfigure in 3.x).
+    implementation("org.springframework.boot:spring-boot-flyway")
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("com.networknt:json-schema-validator:1.5.2")
@@ -42,9 +56,6 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:postgresql")
-    testImplementation("org.testcontainers:junit-jupiter")
 }
 
 tasks.withType<Test> {
@@ -52,10 +63,10 @@ tasks.withType<Test> {
 }
 
 val schemaSource = layout.projectDirectory.dir("../board-game-record")
-val schemaDest = layout.buildDirectory.dir("generated-resources/schemas")
+val schemaDest = layout.buildDirectory.dir("generated-resources")
 
 val copyBoardGameSchemas by tasks.registering(Copy::class) {
-    description = "Copies JSON Schemas from the sibling board-game-record checkout into server resources."
+    description = "Copies JSON Schemas from the sibling board-game-record checkout into server resources under /schemas."
     val coreSchema = schemaSource.file("schema/core.schema.json")
     val gamesDir = schemaSource.dir("games")
     onlyIf {
@@ -69,7 +80,7 @@ val copyBoardGameSchemas by tasks.registering(Copy::class) {
         }
         ok
     }
-    into(schemaDest)
+    into(schemaDest.map { it.dir("schemas") })
     from(coreSchema) {
         into("")
     }

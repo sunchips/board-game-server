@@ -12,12 +12,14 @@ import com.networknt.schema.ValidationMessage
 import com.sanchitb.boardgame.error.SchemaValidationException
 import com.sanchitb.boardgame.error.Violation
 import jakarta.annotation.PostConstruct
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets
 
 @Service
 class SchemaValidator(
+    @Qualifier("legacyObjectMapper")
     private val objectMapper: ObjectMapper,
     private val catalog: GameCatalogService,
 ) {

@@ -6,12 +6,14 @@ import com.sanchitb.boardgame.api.dto.EndStateFieldSpec
 import com.sanchitb.boardgame.api.dto.GameSummary
 import com.sanchitb.boardgame.error.GameNotFoundException
 import jakarta.annotation.PostConstruct
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver
 import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets
 
 @Service
 class GameCatalogService(
+    @Qualifier("legacyObjectMapper")
     private val objectMapper: ObjectMapper,
 ) {
 
@@ -79,19 +81,24 @@ class GameCatalogService(
 
     fun resolveGame(slug: String, yearPublished: Int?): LoadedGameView {
         val exact = games[GameKey(slug, null)]
-        if (exact != null) return LoadedGameView(exact)
+        if (exact != null) return exact.toView()
         if (yearPublished != null) {
             val tagged = games[GameKey(slug, yearPublished)]
-            if (tagged != null) return LoadedGameView(tagged)
+            if (tagged != null) return tagged.toView()
         }
         throw GameNotFoundException(slug, yearPublished)
     }
 
-    data class LoadedGameView(private val inner: LoadedGame) {
-        val slug: String get() = inner.slug
-        val baseSchema: JsonNode get() = inner.baseSchema
-        fun variantSchema(name: String): JsonNode? = inner.variantSchemas[name]
-        val variantNames: Set<String> get() = inner.variantSchemas.keys
+    private fun LoadedGame.toView(): LoadedGameView =
+        LoadedGameView(slug = slug, baseSchema = baseSchema, variantSchemas = variantSchemas)
+
+    data class LoadedGameView(
+        val slug: String,
+        val baseSchema: JsonNode,
+        private val variantSchemas: Map<String, JsonNode>,
+    ) {
+        fun variantSchema(name: String): JsonNode? = variantSchemas[name]
+        val variantNames: Set<String> get() = variantSchemas.keys
     }
 
     private fun buildSummary(game: LoadedGame): GameSummary {

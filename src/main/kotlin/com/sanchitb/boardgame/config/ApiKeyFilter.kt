@@ -5,6 +5,7 @@ import com.sanchitb.boardgame.error.ApiError
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -14,6 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Component
 class ApiKeyFilter(
     @Value("\${api.key}") private val expectedKey: String,
+    @Qualifier("legacyObjectMapper")
     private val objectMapper: ObjectMapper,
 ) : OncePerRequestFilter() {
 
