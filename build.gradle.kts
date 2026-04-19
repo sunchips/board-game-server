@@ -61,9 +61,17 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    // Spring Boot 4 split test auto-config into per-subsystem modules; webmvc-test
+    // carries @AutoConfigureMockMvc and related helpers.
+    testImplementation("org.springframework.boot:spring-boot-webmvc-test")
+    // End-to-end integration tests spin up a throwaway Postgres 18.3 to exercise
+    // the full Spring MVC + Flyway + JPA stack against real SQL.
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:postgresql:1.21.3")
+    testImplementation("org.testcontainers:junit-jupiter:1.21.3")
 }
 
-tasks.withType<Test> {
+tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
 
