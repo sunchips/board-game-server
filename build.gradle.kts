@@ -11,8 +11,10 @@ plugins {
 group = "com.sanchitb"
 version = "0.1.0"
 
-// Build runs on Java 25 (toolchain). Bytecode targets JVM 24 because Kotlin
-// 2.2.0's jvmTarget tops out there; Java 25 runs JVM 24 bytecode without issue.
+// Build uses the Java 25 toolchain on developer machines (the user's installed
+// JDK); bytecode targets JVM 24 because Kotlin 2.2.0's jvmTarget tops out at
+// 24 and the Docker builder uses `gradle:9.0.0-jdk24` (no jdk25 image yet).
+// A Java 25+ runtime runs this bytecode cleanly.
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(25))

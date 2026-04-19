@@ -3,7 +3,7 @@
 # Build context is the parent directory (so board-game-record is included).
 # See docker-compose.yml -> services.server.build.context: ..
 
-FROM gradle:9.0.0-jdk25 AS build
+FROM gradle:9.0.0-jdk24 AS build
 WORKDIR /workspace
 
 COPY board-game-server/settings.gradle.kts board-game-server/build.gradle.kts ./
@@ -18,7 +18,7 @@ COPY board-game-record ../board-game-record
 COPY board-game-server/src src
 RUN gradle --no-daemon clean bootJar
 
-FROM eclipse-temurin:25-jre
+FROM eclipse-temurin:24-jre
 WORKDIR /app
 COPY --from=build /workspace/build/libs/*.jar app.jar
 ENV JAVA_OPTS=""
