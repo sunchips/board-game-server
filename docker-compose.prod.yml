@@ -1,0 +1,10 @@
+services:
+  postgres:
+    restart: unless-stopped
+    ports: !reset []
+
+  server:
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: "-XX:+UseZGC -XX:MaxRAMPercentage=75"

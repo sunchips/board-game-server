@@ -1,0 +1,11 @@
+logging:
+  level:
+    root: info
+    com.sanchitb.boardgame: info
+    org.hibernate.SQL: warn
+
+spring:
+  jpa:
+    properties:
+      hibernate:
+        generate_statistics: false
