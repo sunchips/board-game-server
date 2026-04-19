@@ -1,0 +1,33 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: board-game-server
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/boardgame}
+    username: ${DATABASE_USER:boardgame}
+    password: ${DATABASE_PASSWORD:boardgame}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: non_null
+
+api:
+  key: ${BOARD_GAME_API_KEY:dev-key}
+
+logging:
+  level:
+    org.hibernate.SQL: info
+    com.sanchitb.boardgame: info

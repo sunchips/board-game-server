@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:18.3
+    container_name: boardgame-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-boardgame}
+      POSTGRES_USER: ${POSTGRES_USER:-boardgame}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-boardgame}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - boardgame-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-boardgame} -d ${POSTGRES_DB:-boardgame}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build:
+      # Context is the parent directory so the sibling board-game-record checkout
+      # is visible for the schema copy step. Run `docker compose` from this repo
+      # root; compose resolves the context relative to this file.
+      context: ..
+      dockerfile: board-game-server/Dockerfile
+    container_name: boardgame-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-boardgame}
+      DATABASE_USER: ${POSTGRES_USER:-boardgame}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-boardgame}
+      BOARD_GAME_API_KEY: ${BOARD_GAME_API_KEY:-dev-key}
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+
+volumes:
+  boardgame-pgdata:
