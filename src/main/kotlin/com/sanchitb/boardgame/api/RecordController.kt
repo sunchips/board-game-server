@@ -1,9 +1,9 @@
 package com.sanchitb.boardgame.api
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.sanchitb.boardgame.api.dto.RecordResponse
 import com.sanchitb.boardgame.service.RecordService
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -20,8 +20,13 @@ class RecordController(
     private val records: RecordService,
 ) {
 
-    @PostMapping
-    fun create(@RequestBody body: JsonNode): ResponseEntity<RecordResponse> =
+    /**
+     * Body accepted as raw JSON text and parsed with our Jackson 2 mapper — the
+     * schema validator (networknt) speaks Jackson 2, and we don't want Spring Boot
+     * 4's Jackson 3 converter in the critical path for creation.
+     */
+    @PostMapping(consumes = [MediaType.APPLICATION_JSON_VALUE])
+    fun create(@RequestBody body: String): ResponseEntity<RecordResponse> =
         ResponseEntity.status(HttpStatus.CREATED).body(records.create(body))
 
     @GetMapping

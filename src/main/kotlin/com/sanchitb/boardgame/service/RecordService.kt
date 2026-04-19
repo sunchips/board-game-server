@@ -1,6 +1,5 @@
 package com.sanchitb.boardgame.service
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.sanchitb.boardgame.api.dto.CreateRecordRequest
 import com.sanchitb.boardgame.api.dto.PlayerResponse
@@ -8,6 +7,7 @@ import com.sanchitb.boardgame.api.dto.RecordResponse
 import com.sanchitb.boardgame.domain.GameRecordEntity
 import com.sanchitb.boardgame.error.RecordNotFoundException
 import com.sanchitb.boardgame.repo.GameRecordRepository
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -17,13 +17,15 @@ import java.util.UUID
 class RecordService(
     private val repo: GameRecordRepository,
     private val schemaValidator: SchemaValidator,
+    @Qualifier("legacyObjectMapper")
     private val objectMapper: ObjectMapper,
 ) {
 
     @Transactional
-    fun create(body: JsonNode): RecordResponse {
-        schemaValidator.validate(body)
-        val req = objectMapper.treeToValue(body, CreateRecordRequest::class.java)
+    fun create(body: String): RecordResponse {
+        val jsonNode = objectMapper.readTree(body)
+        schemaValidator.validate(jsonNode)
+        val req = objectMapper.treeToValue(jsonNode, CreateRecordRequest::class.java)
         val entity = GameRecordEntity(
             game = req.game,
             yearPublished = req.yearPublished,

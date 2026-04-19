@@ -9,7 +9,9 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - boardgame-pgdata:/var/lib/postgresql/data
+      # Postgres 18+ recommends mounting the parent dir so major-version upgrades
+      # work via pg_upgrade --link. See https://github.com/docker-library/postgres/pull/1259
+      - boardgame-pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-boardgame} -d ${POSTGRES_DB:-boardgame}"]
       interval: 5s

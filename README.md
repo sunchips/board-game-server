@@ -4,10 +4,11 @@ Kotlin + Spring Boot service that stores board-game session records and exposes 
 
 ## Stack
 
-- Java 25 (toolchain), Kotlin 2.2, Spring Boot 4.0.5, Gradle Kotlin DSL
+- Java 25 toolchain (bytecode targets JVM 24 — Kotlin 2.2.0 doesn't expose a `JVM_25` constant yet; Java 25 runs JVM 24 bytecode without issue)
+- Kotlin 2.2, Spring Boot 4.0.5, Gradle Kotlin DSL
 - PostgreSQL 18.3 (JSONB columns for flexible player end-states)
-- Flyway for schema migrations
-- `com.networknt:json-schema-validator` for Draft 2020-12 validation
+- Flyway for schema migrations (via the per-subsystem `spring-boot-flyway` module)
+- `com.networknt:json-schema-validator` for Draft 2020-12 validation (Jackson 2) — alongside Spring Boot 4's Jackson 3 on the HTTP layer
 - Docker Compose for both local dev and production-style runs
 
 ## Layout
