@@ -175,6 +175,7 @@ class GameCatalogService(
             "codenames" to GameMeta("Codenames", supportsTeams = true),
             "coup" to GameMeta("Coup", supportsElimination = true),
             "everdell" to GameMeta("Everdell"),
+            "hanabi" to GameMeta("Hanabi"),
             "hues-and-cues" to GameMeta("Hues and Cues"),
             "jaipur" to GameMeta("Jaipur"),
             "king-of-new-york" to GameMeta("King of New York", supportsElimination = true),
