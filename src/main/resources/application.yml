@@ -26,7 +26,7 @@ spring:
 
 apple:
   # iOS bundle id — must match the `aud` claim in Apple ID tokens.
-  bundle-id: ${APPLE_BUNDLE_ID:com.sanchitb.boardgame.app}
+  bundle-id: ${APPLE_BUNDLE_ID:com.sanchitb.boardgamerecorder}
 
 auth:
   jwt:

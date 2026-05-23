@@ -243,7 +243,7 @@ class AuthenticatedApiTest {
             registry.add("spring.datasource.username") { postgres.username }
             registry.add("spring.datasource.password") { postgres.password }
             // Dev defaults for the auth side — the test doesn't touch Apple.
-            registry.add("apple.bundle-id") { "com.sanchitb.boardgame.app" }
+            registry.add("apple.bundle-id") { "com.sanchitb.boardgamerecorder" }
             registry.add("auth.jwt.secret") { "test-secret-0123456789abcdef0123456789abcdef" }
         }
     }
