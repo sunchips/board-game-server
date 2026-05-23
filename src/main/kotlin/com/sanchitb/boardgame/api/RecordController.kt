@@ -1,7 +1,9 @@
 package com.sanchitb.boardgame.api
 
 import com.sanchitb.boardgame.api.dto.RecordResponse
+import com.sanchitb.boardgame.auth.CurrentUser
 import com.sanchitb.boardgame.service.RecordService
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -26,8 +28,10 @@ class RecordController(
      * 4's Jackson 3 converter in the critical path for creation.
      */
     @PostMapping(consumes = [MediaType.APPLICATION_JSON_VALUE])
-    fun create(@RequestBody body: String): ResponseEntity<RecordResponse> =
-        ResponseEntity.status(HttpStatus.CREATED).body(records.create(body))
+    fun create(@RequestBody body: String, request: HttpServletRequest): ResponseEntity<RecordResponse> {
+        val currentUser = request.getAttribute(CurrentUser.REQUEST_ATTRIBUTE) as? CurrentUser
+        return ResponseEntity.status(HttpStatus.CREATED).body(records.create(body, currentUser?.userId))
+    }
 
     @GetMapping
     fun list(

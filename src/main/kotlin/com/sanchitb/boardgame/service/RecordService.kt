@@ -22,7 +22,7 @@ class RecordService(
 ) {
 
     @Transactional
-    fun create(body: String): RecordResponse {
+    fun create(body: String, userId: UUID? = null): RecordResponse {
         val jsonNode = objectMapper.readTree(body)
         schemaValidator.validate(jsonNode)
         val req = objectMapper.treeToValue(jsonNode, CreateRecordRequest::class.java)
@@ -44,6 +44,7 @@ class RecordService(
                     put("end_state", p.endState)
                 }
             },
+            userId = userId,
         )
         return repo.save(entity).toResponse()
     }
@@ -69,6 +70,7 @@ class RecordService(
         winners = this.winners,
         notes = this.notes,
         players = this.players.map { it.toPlayerResponse() },
+        userId = this.userId,
         createdAt = this.createdAt ?: java.time.Instant.EPOCH,
     )
 

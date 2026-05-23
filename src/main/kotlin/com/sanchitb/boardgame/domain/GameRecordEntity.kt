@@ -45,6 +45,9 @@ class GameRecordEntity(
     @Column(name = "players", nullable = false, columnDefinition = "jsonb")
     var players: List<Map<String, Any?>> = emptyList(),
 
+    @Column(name = "user_id")
+    var userId: UUID? = null,
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     var createdAt: Instant? = null,

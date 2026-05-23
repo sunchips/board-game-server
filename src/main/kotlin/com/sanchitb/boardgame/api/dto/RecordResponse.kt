@@ -16,6 +16,7 @@ data class RecordResponse(
     val winners: List<Int>,
     val notes: String?,
     val players: List<PlayerResponse>,
+    val userId: UUID?,
     val createdAt: Instant,
 )
 
