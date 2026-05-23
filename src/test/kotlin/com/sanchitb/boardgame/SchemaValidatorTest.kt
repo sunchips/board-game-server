@@ -34,7 +34,7 @@ class SchemaValidatorTest {
         val slugs = catalog.allGames().map { it.slug }.toSet()
         val expected = setOf(
             "bunny-kingdom", "calico", "catan", "codenames", "coup",
-            "everdell", "hues-and-cues", "jaipur", "king-of-new-york",
+            "everdell", "hanabi", "hues-and-cues", "jaipur", "king-of-new-york",
             "parks", "scythe", "secret-hitler", "the-king-is-dead",
             "viticulture", "wavelength",
         )
