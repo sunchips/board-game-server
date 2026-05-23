@@ -38,18 +38,38 @@ All settings are env-overridable. Defaults are for a dev postgres on localhost.
 | `DATABASE_PASSWORD` | `boardgame` | |
 | `BOARD_GAME_API_KEY` | `dev-key` | Clients must send this as `X-API-Key`. Rotate for prod. |
 | `SPRING_PROFILES_ACTIVE` | `default` | Set to `prod` for prod-style logging. |
+| `APPLE_BUNDLE_ID` | `com.sanchitb.boardgame.app` | `aud` claim the server requires on Apple ID tokens. |
+| `BOARD_GAME_JWT_SECRET` | `dev-only-secret…` | HMAC signing key for session JWTs. **Set a real one in prod.** |
+| `BOARD_GAME_JWT_TTL_HOURS` | `720` | Session token lifetime (default 30 days). |
+
+## Authentication
+
+Every `/api/*` route except `/api/auth/**` requires a session JWT in the `Authorization: Bearer <token>` header (401 otherwise). Clients get one by exchanging an Apple ID token:
+
+```
+POST /api/auth/apple
+{ "identity_token": "<eyJraWQi…>", "full_name": "Alex Example" }
+→ 200 { "token": "eyJ0eXAi…", "expires_at": "…", "user": { "id": "…", "email": "…", "display_name": "…" } }
+```
+
+The server verifies the Apple token's RS256 signature against `https://appleid.apple.com/auth/keys`, then upserts a user row keyed by the Apple `sub` and mints an HS256 session JWT. `full_name` is only sent by Apple on the first sign-in; pass it through so the server can store a display name.
 
 ## REST API
 
-All `/api/*` routes require `X-API-Key: <BOARD_GAME_API_KEY>` (401 otherwise).
+All `/api/*` routes (except `/api/auth/**`) require `Authorization: Bearer <token>`.
 
 | Method | Path | Body / Params | Returns |
 |--------|------|---------------|---------|
+| POST | `/api/auth/apple` | `{identity_token, full_name?}` | 200 with `{token, expires_at, user}` |
 | GET | `/api/games` | — | List of supported games with identity enums and end-state field specs |
 | GET | `/api/games/{slug}` | — | Single game summary |
-| POST | `/api/records` | Core record JSON (snake_case) | 201 with stored record |
-| GET | `/api/records` | `game=<slug>&limit=<n>` optional | Paged list, newest first |
-| GET | `/api/records/{id}` | — | Single record |
+| POST | `/api/records` | Core record JSON (snake_case) | 201 with stored record, attributed to caller |
+| GET | `/api/records` | `game=<slug>&limit=<n>` optional | Caller's records, newest first |
+| GET | `/api/records/{id}` | — | Single record (only if owned by caller) |
+| GET | `/api/players` | — | Caller's saved player roster |
+| POST | `/api/players` | `{name, email?, notes?}` | 201 with stored player |
+| PUT | `/api/players/{id}` | `{name, email?, notes?}` | Updated player |
+| DELETE | `/api/players/{id}` | — | 204 |
 
 All payloads use `snake_case` keys (e.g. `player_count`, `end_state`) to match the canonical record format in `board-game-record`.
 
@@ -58,21 +78,21 @@ On validation failure the server returns 400 with a `violations` array — each 
 ## Local development (Docker Compose)
 
 ```bash
-cp .env.example .env            # edit API key if desired
+cp .env.example .env            # set BOARD_GAME_JWT_SECRET etc.
 docker compose up -d postgres   # postgres:18.3 only
 ./gradlew bootRun               # runs the server on :8080 against dockerised postgres
 ```
 
-Smoke test:
+Smoke test (auth rejection — actual Apple tokens come from the iOS app):
 
 ```bash
-curl -s -H "X-API-Key: dev-key" http://localhost:8080/api/games | jq
-curl -s -X POST \
-  -H "X-API-Key: dev-key" \
-  -H "Content-Type: application/json" \
-  --data @../board-game-record/games/catan/example.json \
-  http://localhost:8080/api/records | jq
-curl -s -H "X-API-Key: dev-key" http://localhost:8080/api/records | jq
+curl -s -o /dev/null -w "status=%{http_code}\n" http://localhost:8080/api/games
+# → status=401
+
+curl -s -X POST -H "Content-Type: application/json" \
+  -d '{"identity_token":"not-a-jwt"}' \
+  http://localhost:8080/api/auth/apple | jq
+# → 401 with explanatory violation
 ```
 
 ## Production-style run (Docker Compose overlay)

@@ -54,13 +54,24 @@ dependencies {
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("com.networknt:json-schema-validator:1.5.2")
+    // Apple Sign-In: verify Apple's RS256 ID tokens, issue our own HS256 session JWTs.
+    implementation("com.auth0:java-jwt:4.4.0")
+    implementation("com.auth0:jwks-rsa:0.22.1")
 
     runtimeOnly("org.postgresql:postgresql")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    // Spring Boot 4 split test auto-config into per-subsystem modules; webmvc-test
+    // carries @AutoConfigureMockMvc and related helpers.
+    testImplementation("org.springframework.boot:spring-boot-webmvc-test")
+    // End-to-end integration tests spin up a throwaway Postgres 18.3 to exercise
+    // the full Spring MVC + Flyway + JPA stack against real SQL.
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:postgresql:1.21.3")
+    testImplementation("org.testcontainers:junit-jupiter:1.21.3")
 }
 
-tasks.withType<Test> {
+tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
 

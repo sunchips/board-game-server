@@ -33,7 +33,9 @@ services:
       DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-boardgame}
       DATABASE_USER: ${POSTGRES_USER:-boardgame}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-boardgame}
-      BOARD_GAME_API_KEY: ${BOARD_GAME_API_KEY:-dev-key}
+      APPLE_BUNDLE_ID: ${APPLE_BUNDLE_ID:-com.sanchitb.boardgame.app}
+      BOARD_GAME_JWT_SECRET: ${BOARD_GAME_JWT_SECRET:-dev-only-secret-change-me-at-least-32-bytes-please}
+      BOARD_GAME_JWT_TTL_HOURS: ${BOARD_GAME_JWT_TTL_HOURS:-720}
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
     ports:
