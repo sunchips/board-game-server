@@ -24,37 +24,54 @@ class RecordService(
 
     @Transactional
     fun create(userId: UUID, body: String): RecordResponse {
+        val req = parseAndValidate(body)
+        val entity = GameRecordEntity(userId = userId)
+        applyTo(entity, userId, req)
+        return repo.save(entity).toResponse()
+    }
+
+    @Transactional
+    fun update(userId: UUID, id: UUID, body: String): RecordResponse {
+        val entity = repo.findByIdAndUserId(id, userId)
+            .orElseThrow { RecordNotFoundException(id.toString()) }
+        val req = parseAndValidate(body)
+        applyTo(entity, userId, req)
+        return repo.save(entity).toResponse()
+    }
+
+    private fun parseAndValidate(body: String): CreateRecordRequest {
         val jsonNode = objectMapper.readTree(body)
         schemaValidator.validate(jsonNode)
-        val req = objectMapper.treeToValue(jsonNode, CreateRecordRequest::class.java)
-        val entity = GameRecordEntity(
-            userId = userId,
-            game = req.game,
-            yearPublished = req.yearPublished,
-            variants = req.variants,
-            date = req.date,
-            playerCount = req.playerCount,
-            winners = req.winners,
-            notes = req.notes,
-            players = req.players.map { p ->
-                // Players without an explicit saved_player_id get find-or-created
-                // in the roster so manual additions grow the user's player list
-                // naturally. The resolved id is stamped onto the stored player
-                // JSON so future record reads can link back to the roster row.
-                val resolvedId = p.savedPlayerId
-                    ?: players.findOrCreateByName(userId, p.name, p.email).id
-                buildMap {
-                    put("name", p.name)
-                    p.email?.let { put("email", it) }
-                    p.identity?.let { put("identity", it) }
-                    p.team?.let { put("team", it) }
-                    p.eliminated?.let { put("eliminated", it) }
-                    put("saved_player_id", resolvedId.toString())
-                    put("end_state", p.endState)
-                }
-            },
-        )
-        return repo.save(entity).toResponse()
+        return objectMapper.treeToValue(jsonNode, CreateRecordRequest::class.java)
+    }
+
+    /// Mutate [entity] from [req]. Shared by create + update so the find-or-create
+    /// roster logic, snake_case key mapping, and field list stay in lockstep.
+    private fun applyTo(entity: GameRecordEntity, userId: UUID, req: CreateRecordRequest) {
+        entity.game = req.game
+        entity.yearPublished = req.yearPublished
+        entity.variants = req.variants
+        entity.date = req.date
+        entity.playerCount = req.playerCount
+        entity.winners = req.winners
+        entity.notes = req.notes
+        entity.players = req.players.map { p ->
+            // Players without an explicit saved_player_id get find-or-created
+            // in the roster so manual additions grow the user's player list
+            // naturally. The resolved id is stamped onto the stored player
+            // JSON so future record reads can link back to the roster row.
+            val resolvedId = p.savedPlayerId
+                ?: players.findOrCreateByName(userId, p.name, p.email).id
+            buildMap {
+                put("name", p.name)
+                p.email?.let { put("email", it) }
+                p.identity?.let { put("identity", it) }
+                p.team?.let { put("team", it) }
+                p.eliminated?.let { put("eliminated", it) }
+                put("saved_player_id", resolvedId.toString())
+                put("end_state", p.endState)
+            }
+        }
     }
 
     @Transactional(readOnly = true)
@@ -101,5 +118,6 @@ class RecordService(
         team = (this["team"] as Number?)?.toInt(),
         eliminated = this["eliminated"] as Boolean?,
         endState = (this["end_state"] as Map<String, Any>?).orEmpty(),
+        savedPlayerId = (this["saved_player_id"] as String?)?.let { runCatching { UUID.fromString(it) }.getOrNull() },
     )
 }

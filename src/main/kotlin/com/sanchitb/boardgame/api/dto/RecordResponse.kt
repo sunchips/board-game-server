@@ -26,4 +26,5 @@ data class PlayerResponse(
     val team: Int?,
     val eliminated: Boolean?,
     val endState: Map<String, Any>,
+    val savedPlayerId: UUID?,
 )

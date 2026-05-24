@@ -226,6 +226,66 @@ class AuthenticatedApiTest {
     }
 
     @Test
+    fun `record update replaces fields and rejects cross-user edits`() {
+        val createResult = postJson(
+            "/api/records", aliceToken,
+            """
+            {
+              "game":"catan","date":"2026-04-19","player_count":2,
+              "winners":[0],
+              "players":[
+                {"name":"Alex","identity":"red","end_state":{"settlements":3}},
+                {"name":"Bea","identity":"blue","end_state":{"settlements":2}}
+              ]
+            }
+            """.trimIndent(),
+        ).andReturn()
+        val recordId = mapper.readTree(createResult.response.contentAsString).get("id").asText()
+
+        // Edit: swap the winner, bump Bea's settlements, add notes.
+        mockMvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .put("/api/records/$recordId")
+                .header("Authorization", "Bearer $aliceToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "game":"catan","date":"2026-04-19","player_count":2,
+                      "winners":[1],
+                      "notes":"corrected scoring",
+                      "players":[
+                        {"name":"Alex","identity":"red","end_state":{"settlements":3}},
+                        {"name":"Bea","identity":"blue","end_state":{"settlements":5}}
+                      ]
+                    }
+                    """.trimIndent(),
+                ),
+        ).andExpect { result -> assertEquals(200, result.response.status) }
+
+        val updated = mapper.readTree(
+            mockMvc.perform(
+                get("/api/records/$recordId").header("Authorization", "Bearer $aliceToken"),
+            ).andReturn().response.contentAsString,
+        )
+        assertEquals(listOf(1), updated.get("winners").map { it.asInt() })
+        assertEquals("corrected scoring", updated.get("notes").asText())
+        assertEquals(5, updated.get("players").get(1).get("end_state").get("settlements").asInt())
+
+        // Bob cannot edit Alice's record.
+        mockMvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .put("/api/records/$recordId")
+                .header("Authorization", "Bearer $bobToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """{"game":"catan","date":"2026-04-19","player_count":1,"winners":[0],
+                       "players":[{"name":"hijack","end_state":{}}]}""".trimIndent(),
+                ),
+        ).andExpect { result -> assertEquals(404, result.response.status) }
+    }
+
+    @Test
     fun `posting a record auto-adds new player names to the roster`() {
         playerService.ensureSelf(alice.id, "Alice Example", "alice@example.com")
         val beforeNames = getJson("/api/players", aliceToken)
