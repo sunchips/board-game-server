@@ -23,13 +23,3 @@ data class AuthUser(
     val email: String?,
     val displayName: String?,
 )
-
-/**
- * Bundle of everything the iOS app needs after authenticating — avoids a
- * fan-out of round-trips on launch. Returned from `GET /api/session`.
- */
-data class SessionBundle(
-    val user: AuthUser,
-    val players: List<SavedPlayerResponse>,
-    val records: List<RecordResponse>,
-)

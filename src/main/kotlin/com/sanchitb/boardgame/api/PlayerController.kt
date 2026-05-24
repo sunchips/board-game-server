@@ -4,6 +4,7 @@ import com.sanchitb.boardgame.api.dto.SavedPlayerRequest
 import com.sanchitb.boardgame.api.dto.SavedPlayerResponse
 import com.sanchitb.boardgame.auth.userId
 import com.sanchitb.boardgame.service.PlayerService
+import com.sanchitb.boardgame.service.UserService
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -19,11 +20,23 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/api/players")
-class PlayerController(private val service: PlayerService) {
+class PlayerController(
+    private val service: PlayerService,
+    private val users: UserService,
+) {
 
     @GetMapping
-    fun list(request: HttpServletRequest): List<SavedPlayerResponse> =
-        service.list(request.userId())
+    fun list(request: HttpServletRequest): List<SavedPlayerResponse> {
+        val userId = request.userId()
+        // Lazily ensure the self row exists. Auth's ensureSelf only runs on
+        // a fresh /api/auth/apple exchange; a Keychain-restored session goes
+        // straight to data fetches without retouching auth, so users
+        // grandfathered through the is_self migration would otherwise never
+        // get a self row. Idempotent and cheap (one indexed lookup).
+        val user = users.requireById(userId)
+        service.ensureSelf(userId, user.displayName, user.email)
+        return service.list(userId)
+    }
 
     @PostMapping
     fun create(

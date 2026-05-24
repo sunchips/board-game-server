@@ -75,12 +75,18 @@ class AuthenticatedApiTest {
         // Bob creates one player.
         postJson("/api/players", bobToken, """{"name":"Cam"}""")
 
-        // Alice sees her two; Bob sees his one.
+        // Each user sees only their own roster — plus the lazily-created self
+        // row that GET /api/players materialises on first call.
         val aliceRoster = getJson("/api/players", aliceToken)
-        assertEquals(2, aliceRoster.size())
+        val aliceExplicit = aliceRoster.map { it.get("name").asText() }
+            .filter { it != "alice" }
+            .toSet()
+        assertEquals(setOf("Alex", "Bea"), aliceExplicit)
         val bobRoster = getJson("/api/players", bobToken)
-        assertEquals(1, bobRoster.size())
-        assertEquals("Cam", bobRoster.get(0).get("name").asText())
+        val bobExplicit = bobRoster.map { it.get("name").asText() }
+            .filter { it != "bob" }
+            .toSet()
+        assertEquals(setOf("Cam"), bobExplicit)
     }
 
     @Test
@@ -149,40 +155,26 @@ class AuthenticatedApiTest {
     }
 
     @Test
-    fun `session bundle returns the caller's user, players, and records in one call`() {
-        // Alice has one explicit player and one record. The session endpoint
-        // also calls ensureSelf (cd3c204), which auto-creates a self-row named
-        // after the email local-part. Posting a record with "Alex" + "Bea"
-        // also find-or-creates roster rows for both — "Alex" matches the
-        // existing entry (case-insensitive), "Bea" becomes a new roster row.
-        postJson("/api/players", aliceToken, """{"name":"Alex"}""")
-        postJson(
-            "/api/records", aliceToken,
-            """
-            {
-              "game":"catan","date":"2026-04-19","player_count":2,
-              "winners":[0],
-              "players":[
-                {"name":"Alex","identity":"red","end_state":{"settlements":3}},
-                {"name":"Bea","identity":"blue","end_state":{"settlements":2}}
-              ]
-            }
-            """.trimIndent(),
-        )
-        postJson("/api/players", bobToken, """{"name":"Cam"}""")
+    fun `GET api players lazily creates the self row for grandfathered sessions`() {
+        // Alice's account predates the is_self migration: no auth roundtrip
+        // since the column was added, so her self row was never created.
+        // Hitting /api/players (the iOS app's first call on a Keychain-restored
+        // hydrate) must lazily create it from the email local-part.
+        val before = getJson("/api/players", aliceToken)
+        assertEquals(1, before.size())
+        assertEquals("alice", before.get(0).get("name").asText())
+        assertEquals(true, before.get(0).get("is_self").asBoolean())
 
-        val aliceBundle = getJson("/api/session", aliceToken)
-        assertEquals(alice.id.toString(), aliceBundle.get("user").get("id").asText())
-        val aliceNames = aliceBundle.get("players").map { it.get("name").asText() }.toSet()
-        assertEquals(setOf("Alex", "alice", "Bea"), aliceNames)
-        assertEquals(1, aliceBundle.get("records").size())
-        assertEquals("catan", aliceBundle.get("records").get(0).get("game").asText())
+        // Calling again is a no-op — still exactly one self row, no
+        // duplicates, no second name materialised.
+        val again = getJson("/api/players", aliceToken)
+        assertEquals(1, again.size())
+        assertEquals(before.get(0).get("id").asText(), again.get(0).get("id").asText())
 
-        val bobBundle = getJson("/api/session", bobToken)
-        assertEquals(bob.id.toString(), bobBundle.get("user").get("id").asText())
-        val bobNames = bobBundle.get("players").map { it.get("name").asText() }.toSet()
-        assertEquals(setOf("Cam", "bob"), bobNames)
-        assertEquals(0, bobBundle.get("records").size())
+        // Independent users don't get cross-contaminated.
+        val bobRoster = getJson("/api/players", bobToken)
+        assertEquals(1, bobRoster.size())
+        assertEquals("bob", bobRoster.get(0).get("name").asText())
     }
 
     @Test
@@ -211,9 +203,12 @@ class AuthenticatedApiTest {
         assertEquals(true, roster.get(0).get("is_self").asBoolean())
         assertEquals("Alice Example", roster.get(0).get("name").asText())
 
-        // Bob doesn't see Alice's self player.
+        // Bob doesn't see Alice's self player; he gets his own one lazily
+        // created on his first /api/players hit.
         val bobRoster = getJson("/api/players", bobToken)
-        assertEquals(0, bobRoster.size())
+        assertEquals(1, bobRoster.size())
+        assertEquals("bob", bobRoster.get(0).get("name").asText())
+        assertNotEquals(first.id.toString(), bobRoster.get(0).get("id").asText())
     }
 
     @Test
