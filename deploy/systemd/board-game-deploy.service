@@ -1,0 +1,15 @@
+[Unit]
+Description=Pull and redeploy board-game-server from origin/main
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/apps/board-game/board-game-server/scripts/deploy.sh
+# deploy.sh exits 0 on no-op (no new commits); only failures should surface.
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=5
+
+[Install]
+WantedBy=default.target

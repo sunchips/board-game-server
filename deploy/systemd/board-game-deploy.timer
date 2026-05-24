@@ -1,0 +1,15 @@
+[Unit]
+Description=Poll origin/main for board-game-server updates every minute
+
+[Timer]
+# Wait a bit after boot so the docker daemon is up first.
+OnBootSec=90s
+# Poll at a 60s cadence. Each tick is a fetch + sha compare (~100ms) when
+# there's nothing new; an actual deploy interrupts the schedule via flock.
+OnUnitActiveSec=60s
+# Catch up after sleep/network outage rather than waiting a full minute.
+Persistent=true
+Unit=board-game-deploy.service
+
+[Install]
+WantedBy=timers.target
