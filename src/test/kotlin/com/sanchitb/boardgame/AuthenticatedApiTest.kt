@@ -5,6 +5,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sanchitb.boardgame.auth.JwtService
 import com.sanchitb.boardgame.domain.UserEntity
 import com.sanchitb.boardgame.repo.UserRepository
+import com.sanchitb.boardgame.service.PlayerService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -46,6 +47,7 @@ class AuthenticatedApiTest {
     @Autowired lateinit var mockMvc: MockMvc
     @Autowired lateinit var jwtService: JwtService
     @Autowired lateinit var users: UserRepository
+    @Autowired lateinit var playerService: PlayerService
 
     private val mapper: ObjectMapper = jacksonObjectMapper()
 
@@ -185,6 +187,38 @@ class AuthenticatedApiTest {
         // reflects the DB state through the service directly.
         val fresh = runCatching { users.findByAppleSub("apple-fresh-${UUID.randomUUID()}") }
         assertTrue(fresh.isSuccess)
+    }
+
+    @Test
+    fun `ensureSelf creates exactly one self player and is idempotent`() {
+        // First call creates the self player using the display name.
+        val first = playerService.ensureSelf(alice.id, "Alice Example", "alice@example.com")
+        assertTrue(first.isSelf)
+        assertEquals("Alice Example", first.name)
+
+        // Second call returns the same row — no duplicate.
+        val second = playerService.ensureSelf(alice.id, "Different Name", "alice@example.com")
+        assertEquals(first.id, second.id)
+        assertEquals("Alice Example", second.name)
+
+        // /api/players surfaces the self player with the flag set.
+        val roster = getJson("/api/players", aliceToken)
+        assertEquals(1, roster.size())
+        assertEquals(true, roster.get(0).get("is_self").asBoolean())
+        assertEquals("Alice Example", roster.get(0).get("name").asText())
+
+        // Bob doesn't see Alice's self player.
+        val bobRoster = getJson("/api/players", bobToken)
+        assertEquals(0, bobRoster.size())
+    }
+
+    @Test
+    fun `ensureSelf falls back to email local-part and then 'Me' when displayName is blank`() {
+        val withEmail = playerService.ensureSelf(alice.id, null, "alice@example.com")
+        assertEquals("alice", withEmail.name)
+
+        val noNameNoEmail = playerService.ensureSelf(bob.id, "  ", null)
+        assertEquals("Me", noNameNoEmail.name)
     }
 
     @Test

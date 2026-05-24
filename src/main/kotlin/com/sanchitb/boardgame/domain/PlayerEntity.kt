@@ -28,6 +28,9 @@ class PlayerEntity(
     @Column(name = "notes")
     var notes: String? = null,
 
+    @Column(name = "is_self", nullable = false)
+    var isSelf: Boolean = false,
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     var createdAt: Instant? = null,

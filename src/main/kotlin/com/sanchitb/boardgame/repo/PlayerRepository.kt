@@ -9,4 +9,5 @@ interface PlayerRepository : JpaRepository<PlayerEntity, UUID> {
     fun findAllByUserIdOrderByNameAsc(userId: UUID): List<PlayerEntity>
     fun findByIdAndUserId(id: UUID, userId: UUID): Optional<PlayerEntity>
     fun deleteByIdAndUserId(id: UUID, userId: UUID): Long
+    fun findByUserIdAndIsSelfTrue(userId: UUID): Optional<PlayerEntity>
 }

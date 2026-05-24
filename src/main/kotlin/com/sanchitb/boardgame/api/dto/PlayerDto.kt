@@ -1,5 +1,6 @@
 package com.sanchitb.boardgame.api.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 import java.util.UUID
 
@@ -8,6 +9,7 @@ data class SavedPlayerResponse(
     val name: String,
     val email: String?,
     val notes: String?,
+    @JsonProperty("is_self") val isSelf: Boolean,
     val createdAt: Instant,
     val updatedAt: Instant,
 )

@@ -5,6 +5,7 @@ import com.sanchitb.boardgame.api.dto.AuthResponse
 import com.sanchitb.boardgame.api.dto.AuthUser
 import com.sanchitb.boardgame.auth.AppleTokenVerifier
 import com.sanchitb.boardgame.auth.JwtService
+import com.sanchitb.boardgame.service.PlayerService
 import com.sanchitb.boardgame.service.UserService
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -17,6 +18,7 @@ class AuthController(
     private val apple: AppleTokenVerifier,
     private val jwt: JwtService,
     private val users: UserService,
+    private val players: PlayerService,
 ) {
 
     /**
@@ -29,6 +31,7 @@ class AuthController(
     fun exchangeApple(@RequestBody body: AppleAuthRequest): AuthResponse {
         val identity = apple.verify(body.identityToken)
         val result = users.upsertFromApple(identity, body.fullName)
+        players.ensureSelf(result.user.id, result.user.displayName, result.user.email)
         val issued = jwt.issue(result.user.id)
         return AuthResponse(
             token = issued.token,

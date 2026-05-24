@@ -47,11 +47,34 @@ class PlayerService(private val players: PlayerRepository) {
         if (deleted == 0L) throw RecordNotFoundException("player: $id")
     }
 
+    /**
+     * Ensure a roster entry exists for the user as themselves. Called from the
+     * Apple sign-in path so a freshly-signed-up user can one-tap themselves
+     * into a new record. Idempotent: returns the existing self row if present.
+     */
+    @Transactional
+    fun ensureSelf(userId: UUID, displayName: String?, email: String?): SavedPlayerResponse {
+        val existing = players.findByUserIdAndIsSelfTrue(userId).orElse(null)
+        if (existing != null) return existing.toResponse()
+        val name = displayName?.trim()?.takeIf { it.isNotEmpty() }
+            ?: email?.substringBefore('@')?.takeIf { it.isNotBlank() }
+            ?: "Me"
+        return players.save(
+            PlayerEntity(
+                userId = userId,
+                name = name,
+                email = email?.trim()?.takeIf { it.isNotEmpty() },
+                isSelf = true,
+            ),
+        ).toResponse()
+    }
+
     private fun PlayerEntity.toResponse() = SavedPlayerResponse(
         id = id,
         name = name,
         email = email,
         notes = notes,
+        isSelf = isSelf,
         createdAt = createdAt ?: java.time.Instant.EPOCH,
         updatedAt = updatedAt ?: java.time.Instant.EPOCH,
     )
