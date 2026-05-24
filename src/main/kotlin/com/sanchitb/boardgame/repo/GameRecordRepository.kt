@@ -21,4 +21,11 @@ interface GameRecordRepository : JpaRepository<GameRecordEntity, UUID> {
     fun findByUserAndGame(userId: UUID, game: String, pageable: Pageable): Page<GameRecordEntity>
 
     fun findByIdAndUserId(id: UUID, userId: UUID): Optional<GameRecordEntity>
+
+    /**
+     * Per-user delete that doubles as the ownership check — returns 0 when the
+     * row doesn't exist OR belongs to another user. Service layer turns that
+     * into a 404 so foreign-user deletes leak no information.
+     */
+    fun deleteByIdAndUserId(id: UUID, userId: UUID): Long
 }

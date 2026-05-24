@@ -66,6 +66,12 @@ class RecordService(
             .orElseThrow { RecordNotFoundException(id.toString()) }
             .toResponse()
 
+    @Transactional
+    fun delete(userId: UUID, id: UUID) {
+        val deleted = repo.deleteByIdAndUserId(id, userId)
+        if (deleted == 0L) throw RecordNotFoundException(id.toString())
+    }
+
     private fun GameRecordEntity.toResponse(): RecordResponse = RecordResponse(
         id = this.id,
         game = this.game,

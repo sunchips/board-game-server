@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -46,4 +47,13 @@ class RecordController(
         request: HttpServletRequest,
         @PathVariable id: UUID,
     ): RecordResponse = records.findById(request.userId(), id)
+
+    @DeleteMapping("/{id}")
+    fun delete(
+        request: HttpServletRequest,
+        @PathVariable id: UUID,
+    ): ResponseEntity<Void> {
+        records.delete(request.userId(), id)
+        return ResponseEntity.noContent().build()
+    }
 }
