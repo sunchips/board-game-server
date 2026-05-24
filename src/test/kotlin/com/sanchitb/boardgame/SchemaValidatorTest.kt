@@ -107,4 +107,29 @@ class SchemaValidatorTest {
         val ex = assertThrows(SchemaValidationException::class.java) { validator.validate(body) }
         assertTrue(ex.violations.any { it.path == "/winners/0" })
     }
+
+    @Test
+    fun `cooperative loss with empty winners validates`() {
+        // Hanabi team-loss shape: winners is empty, exploded == true. The core
+        // schema must accept this (minItems: 0) and the hanabi base schema must
+        // not constrain it further.
+        val body = mapper.readTree(
+            """
+            {
+              "game": "hanabi",
+              "date": "2026-05-24",
+              "player_count": 4,
+              "winners": [],
+              "notes": "Third fuse blew on the white 3.",
+              "players": [
+                {"name": "Alex", "end_state": {"score": 0, "exploded": true}},
+                {"name": "Bea",  "end_state": {"score": 0, "exploded": true}},
+                {"name": "Cam",  "end_state": {"score": 0, "exploded": true}},
+                {"name": "Dana", "end_state": {"score": 0, "exploded": true}}
+              ]
+            }
+            """.trimIndent(),
+        )
+        validator.validate(body) // must not throw
+    }
 }
