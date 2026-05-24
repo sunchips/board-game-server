@@ -152,8 +152,9 @@ class AuthenticatedApiTest {
     fun `session bundle returns the caller's user, players, and records in one call`() {
         // Alice has one explicit player and one record. The session endpoint
         // also calls ensureSelf (cd3c204), which auto-creates a self-row named
-        // after the email local-part — so Alice ends up with "Alex" + "alice"
-        // and Bob with "Cam" + "bob".
+        // after the email local-part. Posting a record with "Alex" + "Bea"
+        // also find-or-creates roster rows for both — "Alex" matches the
+        // existing entry (case-insensitive), "Bea" becomes a new roster row.
         postJson("/api/players", aliceToken, """{"name":"Alex"}""")
         postJson(
             "/api/records", aliceToken,
@@ -173,7 +174,7 @@ class AuthenticatedApiTest {
         val aliceBundle = getJson("/api/session", aliceToken)
         assertEquals(alice.id.toString(), aliceBundle.get("user").get("id").asText())
         val aliceNames = aliceBundle.get("players").map { it.get("name").asText() }.toSet()
-        assertEquals(setOf("Alex", "alice"), aliceNames)
+        assertEquals(setOf("Alex", "alice", "Bea"), aliceNames)
         assertEquals(1, aliceBundle.get("records").size())
         assertEquals("catan", aliceBundle.get("records").get(0).get("game").asText())
 
@@ -222,6 +223,50 @@ class AuthenticatedApiTest {
 
         val noNameNoEmail = playerService.ensureSelf(bob.id, "  ", null)
         assertEquals("Me", noNameNoEmail.name)
+    }
+
+    @Test
+    fun `posting a record auto-adds new player names to the roster`() {
+        playerService.ensureSelf(alice.id, "Alice Example", "alice@example.com")
+        val beforeNames = getJson("/api/players", aliceToken)
+            .map { it.get("name").asText() }.toSet()
+        assertTrue(beforeNames.contains("Alice Example"))
+
+        // Two never-before-seen names with no saved_player_id.
+        postJson(
+            "/api/records", aliceToken,
+            """
+            {
+              "game":"catan","date":"2026-04-19","player_count":2,
+              "winners":[0],
+              "players":[
+                {"name":"Newbie One","identity":"red","end_state":{"settlements":3}},
+                {"name":"Newbie Two","identity":"blue","end_state":{"settlements":2}}
+              ]
+            }
+            """.trimIndent(),
+        ).andExpect { result -> assertEquals(201, result.response.status) }
+
+        val afterNames = getJson("/api/players", aliceToken)
+            .map { it.get("name").asText() }.toSet()
+        assertEquals(beforeNames + setOf("Newbie One", "Newbie Two"), afterNames)
+
+        // Case-insensitive dedupe — posting the same names again with
+        // different casing must not create new rows.
+        postJson(
+            "/api/records", aliceToken,
+            """
+            {
+              "game":"catan","date":"2026-04-20","player_count":2,
+              "winners":[0],
+              "players":[
+                {"name":"newbie one","identity":"red","end_state":{"settlements":4}},
+                {"name":"NEWBIE TWO","identity":"blue","end_state":{"settlements":1}}
+              ]
+            }
+            """.trimIndent(),
+        )
+        assertEquals(afterNames.size, getJson("/api/players", aliceToken).size())
     }
 
     @Test

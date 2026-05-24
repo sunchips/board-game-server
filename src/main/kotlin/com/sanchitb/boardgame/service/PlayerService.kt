@@ -48,6 +48,28 @@ class PlayerService(private val players: PlayerRepository) {
     }
 
     /**
+     * Look up a roster entry by case-insensitive name match, creating one if
+     * it doesn't already exist. Called from the record-create path so
+     * manually-entered players become roster members on first appearance.
+     * Returns the resolved (id, name, ...) so the caller can stamp the id
+     * onto the stored record.
+     */
+    @Transactional
+    fun findOrCreateByName(userId: UUID, name: String, email: String?): SavedPlayerResponse {
+        val trimmed = name.trim()
+        require(trimmed.isNotBlank()) { "name must not be blank" }
+        val existing = players.findFirstByUserIdAndNameIgnoreCase(userId, trimmed).orElse(null)
+        if (existing != null) return existing.toResponse()
+        return players.save(
+            PlayerEntity(
+                userId = userId,
+                name = trimmed,
+                email = email?.trim()?.takeIf { it.isNotEmpty() },
+            ),
+        ).toResponse()
+    }
+
+    /**
      * Ensure a roster entry exists for the user as themselves. Called from the
      * Apple sign-in path so a freshly-signed-up user can one-tap themselves
      * into a new record. Idempotent: returns the existing self row if present.

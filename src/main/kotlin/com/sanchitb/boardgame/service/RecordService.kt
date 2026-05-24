@@ -17,6 +17,7 @@ import java.util.UUID
 class RecordService(
     private val repo: GameRecordRepository,
     private val schemaValidator: SchemaValidator,
+    private val players: PlayerService,
     @Qualifier("legacyObjectMapper")
     private val objectMapper: ObjectMapper,
 ) {
@@ -36,12 +37,19 @@ class RecordService(
             winners = req.winners,
             notes = req.notes,
             players = req.players.map { p ->
+                // Players without an explicit saved_player_id get find-or-created
+                // in the roster so manual additions grow the user's player list
+                // naturally. The resolved id is stamped onto the stored player
+                // JSON so future record reads can link back to the roster row.
+                val resolvedId = p.savedPlayerId
+                    ?: players.findOrCreateByName(userId, p.name, p.email).id
                 buildMap {
                     put("name", p.name)
                     p.email?.let { put("email", it) }
                     p.identity?.let { put("identity", it) }
                     p.team?.let { put("team", it) }
                     p.eliminated?.let { put("eliminated", it) }
+                    put("saved_player_id", resolvedId.toString())
                     put("end_state", p.endState)
                 }
             },

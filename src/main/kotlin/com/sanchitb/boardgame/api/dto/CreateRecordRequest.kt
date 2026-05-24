@@ -2,6 +2,7 @@ package com.sanchitb.boardgame.api.dto
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import java.time.LocalDate
+import java.util.UUID
 
 data class CreateRecordRequest(
     val game: String,
@@ -22,4 +23,8 @@ data class PlayerDto(
     val team: Int? = null,
     val eliminated: Boolean? = null,
     val endState: Map<String, Any> = emptyMap(),
+    /// If set, this player references an existing saved-roster row. If null,
+    /// the server will find-or-create a roster entry from name/email so the
+    /// roster grows naturally with every record posted.
+    val savedPlayerId: UUID? = null,
 )
