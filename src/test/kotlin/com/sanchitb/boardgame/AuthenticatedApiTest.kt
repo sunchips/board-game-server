@@ -247,6 +247,50 @@ class AuthenticatedApiTest {
         ).andExpect { result -> assertEquals(204, result.response.status) }
     }
 
+    @Test
+    fun `record delete is per-user and returns 404 for foreign or missing ids`() {
+        // Alice creates a record.
+        val created = postJson(
+            "/api/records", aliceToken,
+            """
+            {
+              "game":"catan","date":"2026-04-19","player_count":2,
+              "winners":[0],
+              "players":[
+                {"name":"Alex","identity":"red","end_state":{"settlements":3}},
+                {"name":"Bea","identity":"blue","end_state":{"settlements":2}}
+              ]
+            }
+            """.trimIndent(),
+        ).andReturn()
+        val id = mapper.readTree(created.response.contentAsString).get("id").asText()
+
+        // Bob can't delete Alice's record.
+        mockMvc.perform(
+            delete("/api/records/$id").header("Authorization", "Bearer $bobToken"),
+        ).andExpect { result -> assertEquals(404, result.response.status) }
+
+        // It's still there for Alice — Bob's failed delete didn't touch it.
+        mockMvc.perform(
+            get("/api/records/$id").header("Authorization", "Bearer $aliceToken"),
+        ).andExpect { result -> assertEquals(200, result.response.status) }
+
+        // Alice's delete succeeds.
+        mockMvc.perform(
+            delete("/api/records/$id").header("Authorization", "Bearer $aliceToken"),
+        ).andExpect { result -> assertEquals(204, result.response.status) }
+
+        // Second delete returns 404 — gone.
+        mockMvc.perform(
+            delete("/api/records/$id").header("Authorization", "Bearer $aliceToken"),
+        ).andExpect { result -> assertEquals(404, result.response.status) }
+
+        // Foreign / missing id also 404.
+        mockMvc.perform(
+            delete("/api/records/${UUID.randomUUID()}").header("Authorization", "Bearer $aliceToken"),
+        ).andExpect { result -> assertEquals(404, result.response.status) }
+    }
+
     private fun postJson(path: String, token: String, body: String) =
         mockMvc.perform(
             post(path)
