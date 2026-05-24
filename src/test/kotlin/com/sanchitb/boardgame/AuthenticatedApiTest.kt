@@ -150,7 +150,10 @@ class AuthenticatedApiTest {
 
     @Test
     fun `session bundle returns the caller's user, players, and records in one call`() {
-        // Alice has one player and one record; Bob has a different set.
+        // Alice has one explicit player and one record. The session endpoint
+        // also calls ensureSelf (cd3c204), which auto-creates a self-row named
+        // after the email local-part — so Alice ends up with "Alex" + "alice"
+        // and Bob with "Cam" + "bob".
         postJson("/api/players", aliceToken, """{"name":"Alex"}""")
         postJson(
             "/api/records", aliceToken,
@@ -169,15 +172,15 @@ class AuthenticatedApiTest {
 
         val aliceBundle = getJson("/api/session", aliceToken)
         assertEquals(alice.id.toString(), aliceBundle.get("user").get("id").asText())
-        assertEquals(1, aliceBundle.get("players").size())
-        assertEquals("Alex", aliceBundle.get("players").get(0).get("name").asText())
+        val aliceNames = aliceBundle.get("players").map { it.get("name").asText() }.toSet()
+        assertEquals(setOf("Alex", "alice"), aliceNames)
         assertEquals(1, aliceBundle.get("records").size())
         assertEquals("catan", aliceBundle.get("records").get(0).get("game").asText())
 
         val bobBundle = getJson("/api/session", bobToken)
         assertEquals(bob.id.toString(), bobBundle.get("user").get("id").asText())
-        assertEquals(1, bobBundle.get("players").size())
-        assertEquals("Cam", bobBundle.get("players").get(0).get("name").asText())
+        val bobNames = bobBundle.get("players").map { it.get("name").asText() }.toSet()
+        assertEquals(setOf("Cam", "bob"), bobNames)
         assertEquals(0, bobBundle.get("records").size())
     }
 
