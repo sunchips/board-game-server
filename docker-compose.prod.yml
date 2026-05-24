@@ -8,3 +8,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       JAVA_OPTS: "-XX:+UseZGC -XX:MaxRAMPercentage=75"
+    # Reverse-proxied — bind to loopback only so the API isn't reachable
+    # from the public internet except through nginx.
+    ports: !override
+      - "127.0.0.1:${BOARDGAME_HOST_PORT:-28080}:8080"
