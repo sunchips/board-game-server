@@ -1,3 +1,5 @@
+<p align="center"><img src="icon.png" width="160" alt="Board Game"></p>
+
 # board-game-server
 
 Kotlin + Spring Boot service that stores board-game session records and exposes a small REST API for the iOS app. Records are validated at ingest against the JSON Schemas in the sibling [`board-game-record`](../board-game-record/) repo (core + per-game base + any variants).
