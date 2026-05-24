@@ -142,6 +142,7 @@ class GameCatalogService(
             endStateFields = fields,
             supportsTeams = meta.supportsTeams,
             supportsElimination = meta.supportsElimination,
+            isCooperative = meta.isCooperative,
             variants = game.variantSchemas.keys.sorted(),
         )
     }
@@ -165,6 +166,7 @@ class GameCatalogService(
         val displayName: String,
         val supportsTeams: Boolean = false,
         val supportsElimination: Boolean = false,
+        val isCooperative: Boolean = false,
     )
 
     companion object {
@@ -175,7 +177,7 @@ class GameCatalogService(
             "codenames" to GameMeta("Codenames", supportsTeams = true),
             "coup" to GameMeta("Coup", supportsElimination = true),
             "everdell" to GameMeta("Everdell"),
-            "hanabi" to GameMeta("Hanabi"),
+            "hanabi" to GameMeta("Hanabi", isCooperative = true),
             "hues-and-cues" to GameMeta("Hues and Cues"),
             "jaipur" to GameMeta("Jaipur"),
             "king-of-new-york" to GameMeta("King of New York", supportsElimination = true),
