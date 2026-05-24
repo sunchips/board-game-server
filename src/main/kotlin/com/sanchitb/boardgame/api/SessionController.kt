@@ -32,6 +32,9 @@ class SessionController(
     fun current(request: HttpServletRequest): SessionBundle {
         val userId = request.userId()
         val user = users.requireById(userId)
+        // Idempotent — covers users who signed in before the is_self migration
+        // or whose session was restored from Keychain without re-hitting auth.
+        players.ensureSelf(userId, user.displayName, user.email)
         return SessionBundle(
             user = AuthUser(id = user.id, email = user.email, displayName = user.displayName),
             players = players.list(userId),
