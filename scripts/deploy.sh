@@ -29,12 +29,12 @@ export DOCKER_HOST="${DOCKER_HOST:-unix:///run/user/$(id -u)/docker.sock}"
 
 log() { printf '[%s] %s\n' "$(date -u +%FT%TZ)" "$*"; }
 
-# Single-flight: a long build must not overlap with the next timer tick.
+# Single-flight: serialise concurrent invocations from the webhook + timer.
+# Block (don't drop) so a webhook firing during a slow build queues behind
+# it. The queued run will git-fetch fresh state when its turn comes — if
+# nothing new arrived, it short-circuits on the SHA comparison below.
 exec 9>"$LOCK"
-if ! flock -n 9; then
-    log "another deploy in progress, skipping"
-    exit 0
-fi
+flock 9
 
 for d in "$SERVER_DIR" "$RECORD_DIR"; do
     if [[ ! -d "$d/.git" ]]; then

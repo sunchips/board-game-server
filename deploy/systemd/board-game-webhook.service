@@ -1,0 +1,16 @@
+[Unit]
+Description=GitHub webhook receiver for board-game-server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=WEBHOOK_SECRET_FILE=%h/apps/board-game/etc/webhook-secret
+Environment=DEPLOY_SCRIPT=%h/apps/board-game/board-game-server/scripts/deploy.sh
+Environment=WEBHOOK_PORT=9001
+ExecStart=/usr/bin/python3 %h/apps/board-game/board-game-server/scripts/webhook-server.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
