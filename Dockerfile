@@ -4,6 +4,7 @@
 # See docker-compose.yml -> services.server.build.context: ..
 
 FROM gradle:9.0.0-jdk24 AS build
+ARG GIT_COMMIT=unknown
 WORKDIR /workspace
 
 COPY board-game-server/settings.gradle.kts board-game-server/build.gradle.kts ./
@@ -16,7 +17,7 @@ RUN chmod +x gradlew
 COPY board-game-record ../board-game-record
 
 COPY board-game-server/src src
-RUN gradle --no-daemon clean bootJar
+RUN gradle --no-daemon clean bootJar -Pgit.commit=$GIT_COMMIT
 
 FROM eclipse-temurin:24-jre
 WORKDIR /app

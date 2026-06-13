@@ -64,7 +64,7 @@ git -C "$SERVER_DIR" pull --ff-only --quiet
 expected_sha=$(git -C "$SERVER_DIR" rev-parse HEAD)
 
 cd "$SERVER_DIR"
-docker compose -f docker-compose.yml -f docker-compose.prod.yml build
+GIT_COMMIT="$expected_sha" docker compose -f docker-compose.yml -f docker-compose.prod.yml build
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 # Spring Boot takes ~15-20s to start. Backoff sequence sums to ~140s — more

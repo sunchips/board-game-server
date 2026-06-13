@@ -25,6 +25,8 @@ services:
       # root; compose resolves the context relative to this file.
       context: ..
       dockerfile: board-game-server/Dockerfile
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
     container_name: boardgame-server
     depends_on:
       postgres:

@@ -81,8 +81,10 @@ val generateVersionProperties by tasks.registering {
     val outDir = layout.buildDirectory.dir("generated-resources/version")
     outputs.dir(outDir)
     doLast {
-        val sha = providers.exec { commandLine("git", "rev-parse", "HEAD") }
-            .standardOutput.asText.get().trim()
+        val sha = providers.gradleProperty("git.commit").orElse(
+            providers.exec { commandLine("git", "rev-parse", "HEAD") }
+                .standardOutput.asText.map { it.trim() }
+        ).get()
         val ts = Instant.now().toString()
         outDir.get().asFile.mkdirs()
         outDir.get().file("version.properties").asFile.writeText(
