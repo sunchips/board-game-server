@@ -178,6 +178,7 @@ class GameCatalogService(
             "coup" to GameMeta("Coup", supportsElimination = true),
             "everdell" to GameMeta("Everdell"),
             "hanabi" to GameMeta("Hanabi", isCooperative = true),
+            "hibachi" to GameMeta("Hibachi"),
             "hues-and-cues" to GameMeta("Hues and Cues"),
             "jaipur" to GameMeta("Jaipur"),
             "king-of-new-york" to GameMeta("King of New York", supportsElimination = true),
