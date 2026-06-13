@@ -35,7 +35,7 @@ class SchemaValidatorTest {
         val expected = setOf(
             "bunny-kingdom", "calico", "catan", "codenames", "coup",
             "everdell", "hanabi", "hues-and-cues", "jaipur", "king-of-new-york",
-            "parks", "scythe", "secret-hitler", "the-king-is-dead",
+            "parks", "petiquette", "scythe", "secret-hitler", "the-king-is-dead",
             "viticulture", "wavelength",
         )
         assertEquals(expected, slugs)

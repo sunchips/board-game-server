@@ -182,6 +182,7 @@ class GameCatalogService(
             "jaipur" to GameMeta("Jaipur"),
             "king-of-new-york" to GameMeta("King of New York", supportsElimination = true),
             "parks" to GameMeta("Parks"),
+            "petiquette" to GameMeta("Petiquette"),
             "scythe" to GameMeta("Scythe"),
             "secret-hitler" to GameMeta("Secret Hitler", supportsTeams = true),
             "the-king-is-dead" to GameMeta("The King Is Dead"),
