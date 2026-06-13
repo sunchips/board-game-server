@@ -1,0 +1,29 @@
+name: Verify deployment
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for deploy to complete
+        run: sleep 120
+
+      - name: Check deployed version
+        env:
+          VERSION_URL: https://boardgame.sanchitb.com/version
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          for i in 1 2 3 4 5; do
+            deployed=$(curl -sf --max-time 10 "$VERSION_URL" | jq -r .commit || echo "unreachable")
+            if [ "$deployed" = "$EXPECTED_SHA" ]; then
+              echo "✅ Deployed: ${EXPECTED_SHA:0:7}"
+              exit 0
+            fi
+            echo "Attempt $i: expected ${EXPECTED_SHA:0:7}, got ${deployed:0:7}"
+            sleep 30
+          done
+          echo "❌ Deploy verification failed after 5 attempts"
+          exit 1

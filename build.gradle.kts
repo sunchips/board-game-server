@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.time.Instant
 
 plugins {
     kotlin("jvm") version "2.2.0"
@@ -75,6 +76,21 @@ tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
 
+val generateVersionProperties by tasks.registering {
+    description = "Writes git commit SHA and build timestamp into version.properties for the /version endpoint."
+    val outDir = layout.buildDirectory.dir("generated-resources/version")
+    outputs.dir(outDir)
+    doLast {
+        val sha = providers.exec { commandLine("git", "rev-parse", "HEAD") }
+            .standardOutput.asText.get().trim()
+        val ts = Instant.now().toString()
+        outDir.get().asFile.mkdirs()
+        outDir.get().file("version.properties").asFile.writeText(
+            "git.commit=$sha\nbuild.time=$ts\n"
+        )
+    }
+}
+
 val schemaSource = layout.projectDirectory.dir("../board-game-record")
 val schemaDest = layout.buildDirectory.dir("generated-resources")
 
@@ -106,11 +122,13 @@ val copyBoardGameSchemas by tasks.registering(Copy::class) {
 sourceSets {
     main {
         resources {
+            srcDir(generateVersionProperties.map { it.outputs.files.singleFile })
             srcDir(schemaDest)
         }
     }
 }
 
 tasks.named("processResources") {
+    dependsOn(generateVersionProperties)
     dependsOn(copyBoardGameSchemas)
 }

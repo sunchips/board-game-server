@@ -20,7 +20,7 @@ set -euo pipefail
 readonly DEPLOY_DIR="${DEPLOY_DIR:-$HOME/apps/board-game}"
 readonly SERVER_DIR="$DEPLOY_DIR/board-game-server"
 readonly RECORD_DIR="$DEPLOY_DIR/board-game-record"
-readonly HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:28080/api/games}"
+readonly VERSION_URL="${VERSION_URL:-http://127.0.0.1:28080/version}"
 readonly LOCK="/tmp/board-game-deploy.lock"
 
 # Rootless Docker context. Without this, non-interactive shells (systemd,
@@ -61,6 +61,8 @@ log "deploying: server ${server_local:0:7} -> ${server_remote:0:7}, record ${rec
 git -C "$RECORD_DIR" pull --ff-only --quiet
 git -C "$SERVER_DIR" pull --ff-only --quiet
 
+expected_sha=$(git -C "$SERVER_DIR" rev-parse HEAD)
+
 cd "$SERVER_DIR"
 docker compose -f docker-compose.yml -f docker-compose.prod.yml build
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
@@ -68,13 +70,13 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 # Spring Boot takes ~15-20s to start. Backoff sequence sums to ~140s — more
 # than enough headroom for a cold JIT.
 for delay in 2 3 5 8 13 21 34 55; do
-    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HEALTH_URL" || true)
-    if [[ "$code" == "401" ]]; then
-        log "healthy (HTTP $code) after waiting ~${delay}s window"
+    deployed_sha=$(curl -s --max-time 5 "$VERSION_URL" | grep -o '"commit":"[^"]*"' | cut -d'"' -f4 || true)
+    if [[ "$deployed_sha" == "$expected_sha" ]]; then
+        log "verified: ${expected_sha:0:7} is live"
         exit 0
     fi
     sleep "$delay"
 done
 
-log "WARNING: health probe never returned 401 (last code: ${code:-none}). Container may still recover; check docker logs boardgame-server."
+log "WARNING: expected SHA ${expected_sha:0:7} but got ${deployed_sha:-none}. Container may still recover; check docker logs boardgame-server."
 exit 1
