@@ -2,7 +2,8 @@
 
 - **Run `./gradlew test` before every commit.** Don't trust a clean `compileKotlin` — the catalog tests and example-record validation only fire under `test`, and they're the ones that catch a new game wired up incorrectly. If tests fail, fix them first; never commit a red tree.
 - **The server must boot.** After changes that touch config, migrations, or DI wiring, smoke-test with `./gradlew bootRun` (Postgres needs to be up — see README) before declaring the change done. The Spring context loading in `AuthenticatedApiTest` is a good proxy but not a substitute when the change is in startup wiring.
-- **Same merge/commit rules as the iOS repo:** merge feature branches into main without asking, commit every logical change, don't push without an explicit ask.
+- **Same merge/commit rules as the iOS repo:** merge feature branches into main without asking, commit every logical change, push to `origin/main` without asking once tests are green.
+- **Commit as soon as tests pass.** Don't accumulate passing work — run the suite, and if it's green, commit and push immediately before moving on to the next change.
 
 ## Cross-repo gotchas
 
