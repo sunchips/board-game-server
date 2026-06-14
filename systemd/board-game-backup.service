@@ -1,0 +1,6 @@
+[Unit]
+Description=Board Game database backup to Google Drive
+
+[Service]
+Type=oneshot
+ExecStart=%h/apps/board-game/board-game-server/scripts/backup-db.sh
