@@ -173,6 +173,7 @@ class GameCatalogService(
         private val DISPLAY_NAMES: Map<String, GameMeta> = mapOf(
             "bunny-kingdom" to GameMeta("Bunny Kingdom"),
             "calico" to GameMeta("Calico"),
+            "canvas" to GameMeta("Canvas"),
             "catan" to GameMeta("Catan"),
             "codenames" to GameMeta("Codenames", supportsTeams = true),
             "coup" to GameMeta("Coup", supportsElimination = true),

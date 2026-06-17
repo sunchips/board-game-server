@@ -33,7 +33,7 @@ class SchemaValidatorTest {
     fun `catalog lists every game folder`() {
         val slugs = catalog.allGames().map { it.slug }.toSet()
         val expected = setOf(
-            "bunny-kingdom", "calico", "catan", "codenames", "coup",
+            "bunny-kingdom", "calico", "canvas", "catan", "codenames", "coup",
             "everdell", "hanabi", "hibachi", "hues-and-cues", "jaipur",
             "king-of-new-york", "parks", "petiquette", "scythe",
             "secret-hitler", "the-king-is-dead", "viticulture", "wavelength",
